@@ -5,5 +5,4 @@
 Working with Markov and Bayesian Networks.
 
 ### Course Website:
-[Probabilistic Methods in Artificial
-Intelligence](https://www.cs.uoregon.edu/Classes/16S/cis410pm/)
+<a href=" https://www.cs.uoregon.edu/Classes/16S/cis410pm/" target="_blank">Probabilistic Methods in Artificial Intelligence</a>
