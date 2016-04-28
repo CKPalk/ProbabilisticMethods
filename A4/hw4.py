@@ -17,6 +17,9 @@ var_ranges = []
 def union( A, B ):
 	return list( set( A ).union( set( B ) ) )
 
+def difference( A, B ):
+	return set( A ).intersection( set( B ) )
+
 def card( A ):
 	return len( A )
 
@@ -37,7 +40,6 @@ def calcStrides( scope ):
 		res[ idx ] = res[ idx - 1 ] * var_ranges[ rev_scope[ idx - 1 ] ]
 
 	l = list( reversed( res ) )
-	#print( "Calculated stride:", l )
 	return l
 
 	
@@ -48,6 +50,8 @@ class Factor(dict):
 		self.vals = vals_
 		self.stride = calcStrides( scope_ )
 
+
+
 	def __mul__(self, other):
 
 		phi1 = self.vals
@@ -55,6 +59,9 @@ class Factor(dict):
 
 		j = 0
 		k = 0
+
+		if difference( self.scope, other.scope ) is None:
+			return self
 
 		u = union( self.scope, other.scope )
 		print( "Self scope:", self.scope )
@@ -65,12 +72,9 @@ class Factor(dict):
 		r = range( valCard( u ) )
 		psi = [ 0 for _ in r ]
 		for i in r:
-			#print( "i", i )
 
 			psi[ i ] = phi1[ j ] * phi2[ k ]
 			for l in range( card( u ) - 1 ):
-				#print( "L:", l )
-				#print( "Num of Elements:", card( u ) )
 				assignment[ l ] += 1
 				if assignment[ l ] == var_ranges[ l ]:
 					assignment[ l ] = 0
@@ -79,10 +83,8 @@ class Factor(dict):
 					if l in other.scope:
 						k -= ( var_ranges[ l ] - 1 ) * other.stride[ l ]
 				else:
-					#print( "Self stride:", self.stride )
 					if l in self.scope:
 						j += self.stride[ l ]
-					#print( "Other stride:", other.stride )
 					if l in other.scope:
 						k += other.stride[ l ]
 					break
