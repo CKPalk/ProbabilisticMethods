@@ -12,37 +12,46 @@ from functools import reduce
 # FACTOR CLASS -- EDIT HERE!
 #
 
-var_ranges = []
+card = []
 
-def union( A, B ):
-	return list( set( A ).union( set( B ) ) )
+vertBar = ''.join( ['-'] * 50 )
+
+def pVal( val ):
+	return round( val, 3 )
+
+def printableVals( vals ):
+	return [ pVal( v ) for v in vals ]
 
 def difference( A, B ):
-	return set( A ).intersection( set( B ) )
+	return list( set( A ).intersection( set( B ) ) )
 
-def card( A ):
+def cardinality( A ):
 	return len( A )
 
-def valCard( A ):
-	global var_ranges
-	s = 1
-	for e in A:
-		s *= var_ranges[ e ]
-	return s
+def cardinalityOfValues( XUX ):
+	return reduce( lambda agg,x: agg * card[x], XUX, 1 )
+
+
+
+# This may be a naive set union, may be wrong
+def union( A, B ):
+    AUB = [ a for a in A ]
+    for b in B:
+        if b not in A:
+            AUB.append( b )
+    print( "A:", A, "union B:", B, "=", AUB )
+    return AUB
 
 def calcStrides( scope ):
-	global var_ranges
 	rev_scope = list( reversed( scope ) )
-
 	res = [ 0 ] * len( scope )
 	res[ 0 ] = 1
 	for idx in range( 1, len( rev_scope ) ):
-		res[ idx ] = res[ idx - 1 ] * var_ranges[ rev_scope[ idx - 1 ] ]
-
+		res[ idx ] = res[ idx - 1 ] * card[ rev_scope[ idx - 1 ] ]
 	l = list( reversed( res ) )
-	return l
+	#l = list( res )
+	return l # What is the 'right ordering for this strides array
 
-	
 
 class Factor(dict):
 	def __init__(self, scope_, vals_):
@@ -54,45 +63,80 @@ class Factor(dict):
 
 	def __mul__(self, other):
 
+		#print( "\n\nStarting factor between", self.scope, "and", other.scope )
+		#print( "\n" )
+		#print( "Phi1 scope:", self.scope )
+		#print( "Phi1 strides:", self.stride )
+		#print( "Phi1:", printableVals( self.vals ) )
+		#print()
+		#print( "Phi2 scope:", other.scope )
+		#print( "Phi2 strides:", other.stride )
+		#print( "Phi2:", printableVals( other.vals ) )
+		#print()
+
+
+		#print( "Scopes share", difference( self.scope, other.scope ) )
+
+		global card # Cardinality of each RV, the RV is the index for its card
+
 		phi1 = self.vals
+		X1 	 = self.scope
+		phi1_stride = self.stride
 		phi2 = other.vals
+		X2 	 = other.scope
+		phi2_stride = other.stride
 
-		j = 0
-		k = 0
+		idx1 = 0
+		idx2 = 0
 
-		if difference( self.scope, other.scope ) is None:
-			return self
+		# This does not preserve orderings
+		XUX = union( X1, X2 ) 
+		# This creates an array to store all vals
+		psi = [ 0 ] * cardinalityOfValues( XUX ) 
 
-		u = union( self.scope, other.scope )
-		print( "Self scope:", self.scope )
-		print( "Other scope:", other.scope )
+		# Assignment [ 0's x Number of RVs in union ]
+		assignment = [ 0 for l in range( 0, cardinality( XUX ) - 1 ) ]
+		#print( "Assignment:", assignment )
 
-		assignment = [ 0 for l in range( card(u) ) ]
-		
-		r = range( valCard( u ) )
-		psi = [ 0 for _ in r ]
-		for i in r:
+		c = cardinalityOfValues( XUX )
+		#print( "Joining X1", X1, "with X2", X2 )
+		#print( "X1 U X2:",  XUX, "cardinality", c )
 
-			psi[ i ] = phi1[ j ] * phi2[ k ]
-			for l in range( card( u ) - 1 ):
+		# This counts up 0, 1, ..., the number of possible values
+		for i in range( 0, cardinalityOfValues( XUX ) ):
+
+			psi[ i ] = phi1[ idx1 ] * phi2[ idx2 ]
+			print( idx1, "and", idx2, "for", i )
+			#print( pVal(psi[ i ]), "=", pVal(phi1[ idx1 ]), "*", pVal(phi2[ idx2 ]), "\n" )
+
+			for l in range( 0, cardinality( XUX ) - 1 ):
+				#print( "L:", l )
 				assignment[ l ] += 1
-				if assignment[ l ] == var_ranges[ l ]:
+				#print( "Assignment:", assignment )
+				if assignment[ l ] == card[ l ]:
+					#print( "In if statment" )
 					assignment[ l ] = 0
-					if l in self.scope:
-						j -= ( var_ranges[ l ] - 1 ) * self.stride[ l ]
-					if l in other.scope:
-						k -= ( var_ranges[ l ] - 1 ) * other.stride[ l ]
+					if l in X1:
+						idx1 -= (( card[ l ] - 1 ) * phi1_stride[ l ] )
+					if l in X2:
+						idx2 -= (( card[ l ] - 1 ) * phi2_stride[ l ] )
 				else:
-					if l in self.scope:
-						j += self.stride[ l ]
-					if l in other.scope:
-						k += other.stride[ l ]
+					#print( "In else statement" )
+					#print( assignment )
+					#print( "Card:", card )
+					if l in X1:
+						idx1 += phi1_stride[ l ]
+					if l in X2:
+						#print( l )
+						#print( phi2_stride )
+						idx2 += phi2_stride[ l ]
 					break
-		
-		print( "Union:", u )
-		print( "Values:", psi )
-		print( "Finished factor" )
-		return Factor( u, psi )
+
+		#print( "\nReturning new factor over", XUX )
+		#print( printableVals( psi ) )
+		#print( vertBar )
+
+		return Factor( XUX, psi )
 	#
 
 	def __rmul__(self, other):
@@ -136,8 +180,8 @@ def read_model():
 
 	# Get number of vars, followed by their ranges
 	num_vars = next_int()
-	global var_ranges
-	var_ranges = [ next_int() for i in range( num_vars ) ]
+	global card
+	card = [ next_int() for i in range( num_vars ) ]
 
 	# Get number and scopes of factors 
 	num_factors = int(next_token())
@@ -151,10 +195,12 @@ def read_model():
 		factor_vals.append( [ next_float() for i in range( next_int() ) ] )
 
 	# DEBUG
-	#print "Num vars: ",num_vars
-	#print ("Ranges: ",var_ranges)
-	#print "Scopes: ",factor_scopes
-	#print "Values: ",factor_vals
+	'''
+	print ( "Num vars: ",num_vars )
+	print ( "Ranges: ", card )
+	print ( "Scopes: ",factor_scopes )
+	print ( "Values: ",factor_vals )
+	'''
 	return [ Factor(s,v) for (s,v) in zip( factor_scopes, factor_vals ) ]
 
 
@@ -167,7 +213,7 @@ def main():
 	# Compute Z by brute force
 	f = reduce( Factor.__mul__, factors )
 	z = sum( f.vals )
-	print( "Z = ", z )
+	print( "\n\nZ = ", z, "\n\n" )
 	return
 
 main()
