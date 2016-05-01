@@ -12,7 +12,7 @@ from functools import reduce
 # FACTOR CLASS -- EDIT HERE!
 #
 
-card = []
+global_card = []
 
 vertBar = ''.join( ['-'] * 50 )
 
@@ -22,14 +22,11 @@ def pVal( val ):
 def printableVals( vals ):
 	return [ pVal( v ) for v in vals ]
 
-def difference( A, B ):
-	return list( set( A ).intersection( set( B ) ) )
-
 def cardinality( A ):
 	return len( A )
 
 def cardinalityOfValues( XUX ):
-	return reduce( lambda agg,x: agg * card[x], XUX, 1 )
+	return reduce( lambda agg,x: agg * global_card[x], XUX, 1 )
 
 
 
@@ -47,7 +44,7 @@ def calcStrides( scope ):
 	res = [ 0 ] * len( scope )
 	res[ 0 ] = 1
 	for idx in range( 1, len( rev_scope ) ):
-		res[ idx ] = res[ idx - 1 ] * card[ rev_scope[ idx - 1 ] ]
+		res[ idx ] = res[ idx - 1 ] * global_card[ rev_scope[ idx - 1 ] ]
 	l = list( reversed( res ) )
 	#l = list( res )
 	return l # What is the 'right ordering for this strides array
@@ -77,7 +74,7 @@ class Factor(dict):
 
 		#print( "Scopes share", difference( self.scope, other.scope ) )
 
-		global card # Cardinality of each RV, the RV is the index for its card
+		global global_card # Cardinality of each RV, the RV is the index for its global_card
 
 		phi1 = self.vals
 		X1 	 = self.scope
@@ -113,17 +110,17 @@ class Factor(dict):
 				#print( "L:", l )
 				assignment[ l ] += 1
 				#print( "Assignment:", assignment )
-				if assignment[ l ] == card[ l ]:
+				if assignment[ l ] == global_card[ l ]:
 					#print( "In if statment" )
 					assignment[ l ] = 0
 					if l in X1:
-						idx1 -= (( card[ l ] - 1 ) * phi1_stride[ l ] )
+						idx1 -= (( global_card[ l ] - 1 ) * phi1_stride[ l ] )
 					if l in X2:
-						idx2 -= (( card[ l ] - 1 ) * phi2_stride[ l ] )
+						idx2 -= (( global_card[ l ] - 1 ) * phi2_stride[ l ] )
 				else:
 					#print( "In else statement" )
 					#print( assignment )
-					#print( "Card:", card )
+					#print( "Card:", global_card )
 					if l in X1:
 						idx1 += phi1_stride[ l ]
 					if l in X2:
@@ -180,8 +177,8 @@ def read_model():
 
 	# Get number of vars, followed by their ranges
 	num_vars = next_int()
-	global card
-	card = [ next_int() for i in range( num_vars ) ]
+	global global_card
+	global_card = [ next_int() for i in range( num_vars ) ]
 
 	# Get number and scopes of factors 
 	num_factors = int(next_token())
@@ -197,7 +194,7 @@ def read_model():
 	# DEBUG
 	'''
 	print ( "Num vars: ",num_vars )
-	print ( "Ranges: ", card )
+	print ( "Ranges: ", global_card )
 	print ( "Scopes: ",factor_scopes )
 	print ( "Values: ",factor_vals )
 	'''
