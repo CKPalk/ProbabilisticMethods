@@ -30,9 +30,8 @@ def cardinalityOfValues( XUX ):
 
 
 def cardOfUnion( U ):
-	return [ global_card[ u ] for u in U ]
+	return { u : global_card[ u ] for u in U }
 
-# This may be a naive set union, may be wrong
 def union( A, B ):
     AUB = [ a for a in A ]
     for b in B:
@@ -47,9 +46,9 @@ def calcStrides( scope ):
 	res[ 0 ] = 1
 	for idx in range( 1, len( rev_scope ) ):
 		res[ idx ] = res[ idx - 1 ] * global_card[ rev_scope[ idx - 1 ] ]
-	l = list( reversed( res ) )
-	#l = list( res )
-	return l # What is the 'right ordering for this strides array
+	stride = list( reversed( res ) )
+	#return { scope[i] : res[i]	  for i in range( len( scope ) ) }
+	return { scope[i] : stride[i] for i in range( len( scope ) ) }
 
 
 class Factor(dict):
@@ -72,8 +71,6 @@ class Factor(dict):
 		X2 	 = other.scope
 		phi2_stride = other.stride
 
-		print( "Factoring", self, "with", other )
-
 		idx1 = 0
 		idx2 = 0
 
@@ -81,18 +78,13 @@ class Factor(dict):
 
 		# This creates an array to store all vals
 		psi = [ 0 ] * cardinalityOfValues( XUX ) 
-		print( "Psi on creation:", psi )
 
 		# Assignment [ 0's x Number of RVs in union ]
-		assignment = [ 0 for l in range( 0, cardinality( XUX ) ) ]
-		print( "Assignment on creation:", assignment )
+		assignment = { e : 0 for e in XUX }
 
 		card_vals = cardinalityOfValues( XUX )
 		card_XUX  = cardinality( XUX )
 		card = cardOfUnion( XUX )
-		print( "Union:", XUX )
-		print( "Local card:", card )
-		print( "Possible values count:", card_vals )
 
 		# This counts up 0, 1, ..., the number of possible values
 		for i in range( 0, card_vals ):
@@ -100,7 +92,7 @@ class Factor(dict):
 			psi[ i ] = phi1[ idx1 ] * phi2[ idx2 ]
 			print( "psi[", i, "] = phi1[", idx1, "] x phi2[", idx2, "]" )
 
-			for l in range( 0, card_XUX ):
+			for l in reversed( XUX ):
 				assignment[ l ] += 1
 				#print( "Updated assignment:", assignment )
 				if assignment[ l ] == card[ l ]:
