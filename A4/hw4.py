@@ -4,6 +4,8 @@
 # April 2016
 #
 # TEMPLATE CODE
+
+
 import sys
 import tokenize
 from functools import reduce
@@ -183,6 +185,7 @@ def main():
 	factors = read_model()
 	# Compute Z by brute force
 	f = reduce( Factor.__mul__, factors )
+	print( f )
 	z = sum( f.vals )
 	print( "\n\nZ = ", z, "\n\n" )
 	return
