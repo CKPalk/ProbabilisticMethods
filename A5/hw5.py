@@ -61,6 +61,7 @@ class Factor( dict ):
 							 '\n'.join( [ str( round( e, 3 ) ) for e in self.vals ] ) )
 
 	def __mul__(self, other):
+		print( "Multiplying" )
 		XUX 		= union( self.scope, other.scope )
 		assignment 	= { e : 0 for e in XUX }
 		card 		= cardOfUnion( XUX )
@@ -79,6 +80,7 @@ class Factor( dict ):
 					idx1 += self.stride [ l ] if l in self.scope  else 0
 					idx2 += other.stride[ l ] if l in other.scope else 0
 					break
+		print( "Returning new factor" )
 		return Factor( XUX, psi )
 	#
 
@@ -95,25 +97,25 @@ class Factor( dict ):
 	def sumOut( self, rv ):
 		# Sum out check, ensure that the origional sum = final sum
 		print( "--- Sum out initial sum:", sum(self.vals))
+		print( self )
 		if rv not in self.scope:
 			raise Exception( "Trying to sum out {} which is not in the Factor".format( rv ) )
 
-		'''
-		Now that we know what we are summing out we can prepare our resulting Factor
-		'''
-		# We know there will only be half as many values in the resulting Factor
-		res_vals  = [ 0 ] * ( len( self.vals ) // 2 )
+		# The resulting values will be the starting divided by the cardinality of our summed out rv
+		res_vals  = [ 0 ] * ( len( self.vals ) // global_card[rv] )
 
 		# The scope will be the origional factors remove our rv
 		res_scope = [ s for s in self.scope if s is not rv ]
 		rv_stride = self.stride[ rv ]
 
+		print( rv_stride )
+
 		for idx in range( len( res_vals ) ):
 			sec = idx // rv_stride
 			idx1 = idx + ( sec * rv_stride )
 			idx2 = idx1 + rv_stride
+			print( "res[" + str(idx) + "] = vals[" + str(idx1) + "] + vals[" + str(idx2) + "]" )
 			res_vals[ idx ] = self.vals[ idx1 ] + self.vals[ idx2 ]
-			# print( "res[" + str(idx) + "] = vals[" + str(idx1) + "] + vals[" + str(idx2) + "]" )
 
 		print( "--- Sum out final sum:", sum(res_vals))
 		return Factor( res_scope, res_vals )
@@ -185,35 +187,28 @@ def main():
 	# Get smart about that Z calc
 	for rv in range( num_vars ):
 		print( "Summing out", rv )
-		print( "Initial factors" )
-		pf(factors)
 		factors_sub = [ f for f in factors if f.containsRV( rv )   ]
-		if not factors_sub:
-			print( "There are no factors with", rv )
+		if len( factors_sub ) < 2:
 			continue
-		print( "Factor subset:" )
-		pf(factors_sub)
 		new_factors = [ f for f in factors if f not in factors_sub ]
-		print( "New factors" )
-		pf(factors)
+		print( "FACTORS SUBSET LEN:", len( factors_sub ), factors_sub )
 		factored_sub = reduce( Factor.__mul__, factors_sub )
-		print(factored_sub)
-		fs = factored_sub.sumOut(rv)
-		print(fs)
-		new_factors.append( fs )
+		print( "FACTORED SUBSET:", factored_sub )
+
+		new_factors.append(
+			factored_sub.sumOut(rv) if len(factored_sub.scope) > 1 else factored_sub
+		)
+
 		factors = new_factors
-		print( "Final factors" )
-		pf(factors)
 		if len( factors ) == 1:
 			break
 
-	z = sum( factors[0].vals )
+	print( "RESULTS:" )
+	pf(factors)
 
-	#f = reduce( Factor.__mul__, factors )
+	f = reduce( Factor.__mul__, factors )
 
-	#print( f.sumOut( 0 ) )
-
-	#z = sum( f.vals )
+	z = sum( f.vals )
 	print( "\nZ = ", z, "\n" )
 	return
 
