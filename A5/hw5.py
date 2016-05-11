@@ -55,13 +55,14 @@ class Factor( dict ):
 				self.stride == other.stride )
 
 	def __repr__( self ):
-		style = "\n{0}\nScope: {1}\nStride: {2}\nVals:\n{3}\n{0}\n"
+		style = "\n{0}\nScope: {1}\nStride: {2}\nCard: {3}\nVals:\n{4}\n{0}\n"
 		vertBar = ''.join( ['-'] * 50 )
 		return style.format( vertBar, self.scope, self.stride,
+							 { v : global_card[v] for v in self.scope },
 							 '\n'.join( [ str( round( e, 3 ) ) for e in self.vals ] ) )
 
 	def __mul__(self, other):
-		print( "Multiplying" )
+		# print( "Multiplying" )
 		XUX 		= union( self.scope, other.scope )
 		assignment 	= { e : 0 for e in XUX }
 		card 		= cardOfUnion( XUX )
@@ -80,7 +81,7 @@ class Factor( dict ):
 					idx1 += self.stride [ l ] if l in self.scope  else 0
 					idx2 += other.stride[ l ] if l in other.scope else 0
 					break
-		print( "Returning new factor" )
+		#print( "Returning new factor" )
 		return Factor( XUX, psi )
 	#
 
@@ -96,28 +97,31 @@ class Factor( dict ):
 
 	def sumOut( self, rv ):
 		# Sum out check, ensure that the origional sum = final sum
-		print( "--- Sum out initial sum:", sum(self.vals))
-		print( self )
+		print( "--- Sum out for", rv, "initial sum:", sum(self.vals))
+		#print( self )
 		if rv not in self.scope:
 			raise Exception( "Trying to sum out {} which is not in the Factor".format( rv ) )
 
 		# The resulting values will be the starting divided by the cardinality of our summed out rv
-		res_vals  = [ 0 ] * ( len( self.vals ) // global_card[rv] )
+		rv_card = global_card[ rv ]
+		res_vals  = [ 0 ] * ( len( self.vals ) // rv_card )
 
 		# The scope will be the origional factors remove our rv
 		res_scope = [ s for s in self.scope if s is not rv ]
 		rv_stride = self.stride[ rv ]
 
-		print( rv_stride )
-
 		for idx in range( len( res_vals ) ):
 			sec = idx // rv_stride
 			idx1 = idx + ( sec * rv_stride )
-			idx2 = idx1 + rv_stride
-			print( "res[" + str(idx) + "] = vals[" + str(idx1) + "] + vals[" + str(idx2) + "]" )
-			res_vals[ idx ] = self.vals[ idx1 ] + self.vals[ idx2 ]
+			next_idx = idx1
+			acc = 0
+			for _ in range( 1, rv_card ):
+				next_idx += rv_stride
+				acc += self.vals[ next_idx ]
+			res_vals[ idx ] = self.vals[ idx1 ] + acc
 
 		print( "--- Sum out final sum:", sum(res_vals))
+		#( "Resulting Factor", Factor( res_scope, res_vals ) )
 		return Factor( res_scope, res_vals )
 
 
@@ -181,19 +185,30 @@ def pf(f):
 	for x in f:
 		print(x)
 
+def factorCountWithVar( factors, rv ):
+	count = 0
+	for f in factors:
+		if f.containsRV(rv):
+			count+=1
+	return count
+
+def factorStats( factors ):
+	return { v: factorCountWithVar(factors,v) for v in range( num_vars ) }
+
 def main():
 	factors = read_model()
+	import operator
+	print( max( factorStats( factors ).iteritems(), key=operator.itemgetter(1))[0] )
 
 	# Get smart about that Z calc
 	for rv in range( num_vars ):
-		print( "Summing out", rv )
 		factors_sub = [ f for f in factors if f.containsRV( rv )   ]
 		if len( factors_sub ) < 2:
 			continue
 		new_factors = [ f for f in factors if f not in factors_sub ]
-		print( "FACTORS SUBSET LEN:", len( factors_sub ), factors_sub )
+		#print( "FACTORS SUBSET LEN:", len( factors_sub ), factors_sub )
 		factored_sub = reduce( Factor.__mul__, factors_sub )
-		print( "FACTORED SUBSET:", factored_sub )
+		#print( "FACTORED SUBSET:", factored_sub )
 
 		new_factors.append(
 			factored_sub.sumOut(rv) if len(factored_sub.scope) > 1 else factored_sub
@@ -202,9 +217,6 @@ def main():
 		factors = new_factors
 		if len( factors ) == 1:
 			break
-
-	print( "RESULTS:" )
-	pf(factors)
 
 	f = reduce( Factor.__mul__, factors )
 
