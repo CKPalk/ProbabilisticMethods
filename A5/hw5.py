@@ -205,8 +205,6 @@ def main():
 		print( "Final factors" )
 		pf(factors)
 		if len( factors ) == 1:
-			print( "One factor left" )
-			print( factors[0] )
 			break
 
 	z = sum( factors[0].vals )
