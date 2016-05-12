@@ -62,7 +62,6 @@ class Factor( dict ):
 							 '\n'.join( [ str( round( e, 3 ) ) for e in self.vals ] ) )
 
 	def __mul__(self, other):
-		# print( "Multiplying" )
 		XUX 		= union( self.scope, other.scope )
 		assignment 	= { e : 0 for e in XUX }
 		card 		= cardOfUnion( XUX )
@@ -81,7 +80,6 @@ class Factor( dict ):
 					idx1 += self.stride [ l ] if l in self.scope  else 0
 					idx2 += other.stride[ l ] if l in other.scope else 0
 					break
-		#print( "Returning new factor" )
 		return Factor( XUX, psi )
 	#
 
@@ -94,11 +92,11 @@ class Factor( dict ):
 	def containsRV( self, rv ):
 		return rv in self.scope
 
-
 	def sumOut( self, rv ):
 		# Sum out check, ensure that the origional sum = final sum
-		print( "--- Sum out for", rv, "initial sum:", sum(self.vals))
+		#print( "--- Sum out for", rv, "initial sum:", sum(self.vals))
 		#print( self )
+
 		if rv not in self.scope:
 			raise Exception( "Trying to sum out {} which is not in the Factor".format( rv ) )
 
@@ -109,19 +107,17 @@ class Factor( dict ):
 		# The scope will be the origional factors remove our rv
 		res_scope = [ s for s in self.scope if s is not rv ]
 		rv_stride = self.stride[ rv ]
+		#print( rv, "stride", rv_stride )
 
 		for idx in range( len( res_vals ) ):
 			sec = idx // rv_stride
-			idx1 = idx + ( sec * rv_stride )
-			next_idx = idx1
-			acc = 0
-			for _ in range( 1, rv_card ):
-				next_idx += rv_stride
-				acc += self.vals[ next_idx ]
-			res_vals[ idx ] = self.vals[ idx1 ] + acc
+			start_idx = idx + ( sec * rv_stride )
 
-		print( "--- Sum out final sum:", sum(res_vals))
-		#( "Resulting Factor", Factor( res_scope, res_vals ) )
+			#print( "Indexes:", [ start_idx + (rv_stride * step) for step in range( rv_card ) ] )
+			res_vals[ idx ] = sum( [ self.vals[ start_idx + (rv_stride * step) ] for step in range( rv_card ) ] )
+
+		#print( Factor( res_scope, res_vals ) )
+		#print( "--- Sum out for", rv, "final   sum:", sum(res_vals))
 		return Factor( res_scope, res_vals )
 
 
@@ -186,29 +182,31 @@ def pf(f):
 		print(x)
 
 def factorCountWithVar( factors, rv ):
-	count = 0
-	for f in factors:
-		if f.containsRV(rv):
-			count+=1
-	return count
+	return sum( [ 1 if f.containsRV( rv ) else 0 for f in factors ] )
 
-def factorStats( factors ):
-	return { v: factorCountWithVar(factors,v) for v in range( num_vars ) }
+def factorStats( factors, possibleVariables ):
+	return { v: factorCountWithVar(factors,v) for v in range( num_vars ) if v in possibleVariables }
 
 def main():
 	factors = read_model()
-	import operator
-	print( max( factorStats( factors ).iteritems(), key=operator.itemgetter(1))[0] )
+
+	possibleVariables = set( range( num_vars ) )
+	#print( possibleVariables )
 
 	# Get smart about that Z calc
-	for rv in range( num_vars ):
+	while possibleVariables:
+
+		stats = factorStats( factors, possibleVariables )
+		rv = min( stats, key=lambda x: stats[x] )
+		possibleVariables.remove( rv )
+
 		factors_sub = [ f for f in factors if f.containsRV( rv )   ]
+
 		if len( factors_sub ) < 2:
 			continue
+
 		new_factors = [ f for f in factors if f not in factors_sub ]
-		#print( "FACTORS SUBSET LEN:", len( factors_sub ), factors_sub )
 		factored_sub = reduce( Factor.__mul__, factors_sub )
-		#print( "FACTORED SUBSET:", factored_sub )
 
 		new_factors.append(
 			factored_sub.sumOut(rv) if len(factored_sub.scope) > 1 else factored_sub
@@ -217,6 +215,7 @@ def main():
 		factors = new_factors
 		if len( factors ) == 1:
 			break
+	#
 
 	f = reduce( Factor.__mul__, factors )
 
