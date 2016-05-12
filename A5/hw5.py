@@ -64,7 +64,7 @@ class Factor( dict ):
 	def __mul__(self, other):
 		XUX 		= union( self.scope, other.scope )
 		assignment 	= { e : 0 for e in XUX }
-		card 		= cardOfUnion( XUX )
+		union_card 		= cardOfUnion( XUX )
 		psi 		= [ 0 ] * cardinalityOfValues( XUX )
 
 		idx1 = idx2 = 0
@@ -72,10 +72,10 @@ class Factor( dict ):
 			psi[ i ] = self.vals[ idx1 ] * other.vals[ idx2 ]
 			for l in reversed( XUX ):
 				assignment[ l ] += 1
-				if assignment[ l ] == card[ l ]:
+				if assignment[ l ] == union_card[ l ]:
 					assignment[ l ] = 0
-					idx1 -= (( card[ l ] - 1 ) * self.stride [ l ] ) if l in self.scope  else 0
-					idx2 -= (( card[ l ] - 1 ) * other.stride[ l ] ) if l in other.scope else 0
+					idx1 -= (( union_card[ l ] - 1 ) * self.stride [ l ] ) if l in self.scope  else 0
+					idx2 -= (( union_card[ l ] - 1 ) * other.stride[ l ] ) if l in other.scope else 0
 				else:
 					idx1 += self.stride [ l ] if l in self.scope  else 0
 					idx2 += other.stride[ l ] if l in other.scope else 0
@@ -93,14 +93,11 @@ class Factor( dict ):
 		return rv in self.scope
 
 	def sumOut( self, rv ):
-		# Sum out check, ensure that the origional sum = final sum
-		#print( "--- Sum out for", rv, "initial sum:", sum(self.vals))
-		#print( self )
 
 		if rv not in self.scope:
 			raise Exception( "Trying to sum out {} which is not in the Factor".format( rv ) )
 
-		# The resulting values will be the starting divided by the cardinality of our summed out rv
+		# The number of resulting values will be the the origional number divided by the cardinality of our summed out rv
 		rv_card = global_card[ rv ]
 		res_vals  = [ 0 ] * ( len( self.vals ) // rv_card )
 
@@ -113,17 +110,19 @@ class Factor( dict ):
 			sec = idx // rv_stride
 			start_idx = idx + ( sec * rv_stride )
 
-			#print( "Indexes:", [ start_idx + (rv_stride * step) for step in range( rv_card ) ] )
+			# Sum the appropriate values from the origional factors vals
+			#  - Start at ...
+			#  - Step by the stride of the RV
 			res_vals[ idx ] = sum( [ self.vals[ start_idx + (rv_stride * step) ] for step in range( rv_card ) ] )
 
-		#print( Factor( res_scope, res_vals ) )
-		#print( "--- Sum out for", rv, "final   sum:", sum(res_vals))
+		
+
 		return Factor( res_scope, res_vals )
 
 
 #
 # READ IN MODEL FILE
-#
+# ( don't tell me what to do! )
 
 # Read in all tokens from stdin.  Save it to a (global) buf that we use
 # later.  (Is there a better way to do this? Almost certainly.)
@@ -191,7 +190,6 @@ def main():
 	factors = read_model()
 
 	possibleVariables = set( range( num_vars ) )
-	#print( possibleVariables )
 
 	# Get smart about that Z calc
 	while possibleVariables:
