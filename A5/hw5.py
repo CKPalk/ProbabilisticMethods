@@ -49,6 +49,7 @@ class Factor( dict ):
 							 '\n'.join( [ str( round( e, 3 ) ) for e in self.vals ] ) )
 
 	def __mul__(self, other):
+<<<<<<< HEAD
 		new_scope 	= union( self.scope, other.scope )
 		assignment 	= { e : 0 for e in new_scope }
 		card 		= { u : global_card[ u ] for u in new_scope }
@@ -63,6 +64,22 @@ class Factor( dict ):
 					idx1 -= assignment[ rv ] * self.stride [ rv ] if rv in self.stride  else 0
 					idx2 -= assignment[ rv ] * other.stride[ rv ] if rv in other.stride else 0
 					assignment[ rv ] = 0
+=======
+		XUX 		= union( self.scope, other.scope )
+		assignment 	= { e : 0 for e in XUX }
+		union_card 		= cardOfUnion( XUX )
+		psi 		= [ 0 ] * cardinalityOfValues( XUX )
+
+		idx1 = idx2 = 0
+		for i in range( 0, cardinalityOfValues( XUX ) ):
+			psi[ i ] = self.vals[ idx1 ] * other.vals[ idx2 ]
+			for l in reversed( XUX ):
+				assignment[ l ] += 1
+				if assignment[ l ] == union_card[ l ]:
+					assignment[ l ] = 0
+					idx1 -= (( union_card[ l ] - 1 ) * self.stride [ l ] ) if l in self.scope  else 0
+					idx2 -= (( union_card[ l ] - 1 ) * other.stride[ l ] ) if l in other.scope else 0
+>>>>>>> f8f817e40daceb96e8969a7cf0a7a088f2bc8eab
 				else:
 					idx1 += self.stride [ rv ] if rv in self.scope  else 0
 					idx2 += other.stride[ rv ] if rv in other.scope else 0
@@ -82,15 +99,18 @@ class Factor( dict ):
 		return rv in self.scope
 
 	def sumOut( self, rv ):
+<<<<<<< HEAD
 		# Sum out check, ensure that the origional sum = final sum
 		sum_in = round( sum( self.vals ), ndigits=3 )
 		print( " > Sum out {:2} sum in:  {}".format( rv, sum_in ) )
 		#print( self )
+=======
+>>>>>>> f8f817e40daceb96e8969a7cf0a7a088f2bc8eab
 
 		if rv not in self.scope:
 			raise Exception( "Trying to sum out {:2} which is not in the Factor".format( rv ) )
 
-		# The resulting values will be the starting divided by the cardinality of our summed out rv
+		# The number of resulting values will be the the origional number divided by the cardinality of our summed out rv
 		rv_card = global_card[ rv ]
 		res_vals  = [ 0 ] * ( len( self.vals ) // rv_card )
 
@@ -103,9 +123,12 @@ class Factor( dict ):
 			sec = idx // rv_stride
 			start_idx = idx + ( sec * rv_stride )
 
-			#print( "Indexes:", [ start_idx + (rv_stride * step) for step in range( rv_card ) ] )
+			# Sum the appropriate values from the origional factors vals
+			#  - Start at ...
+			#  - Step by the stride of the RV
 			res_vals[ idx ] = sum( [ self.vals[ start_idx + (rv_stride * step) ] for step in range( rv_card ) ] )
 
+<<<<<<< HEAD
 		#print( Factor( res_scope, res_vals ) )
 		sum_out = round( sum( res_vals ), ndigits=3 )
 		print( " < Sum out {:2} sum out: {}".format( rv, sum_out ) )
@@ -113,12 +136,16 @@ class Factor( dict ):
 		if abs(sum_in-sum_out) > 0.01:
 			print( "SUM DIFFERENCE IS {}".format( abs(sum_in-sum_out) ))
 			print( self )
+=======
+		
+
+>>>>>>> f8f817e40daceb96e8969a7cf0a7a088f2bc8eab
 		return Factor( res_scope, res_vals )
 
 
 #
 # READ IN MODEL FILE
-#
+# ( don't tell me what to do! )
 
 # Read in all tokens from stdin.  Save it to a (global) buf that we use
 # later.  (Is there a better way to do this? Almost certainly.)
