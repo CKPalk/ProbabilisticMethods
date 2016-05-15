@@ -99,13 +99,10 @@ class Factor( dict ):
 		return rv in self.scope
 
 	def sumOut( self, rv ):
-<<<<<<< HEAD
+		
 		# Sum out check, ensure that the origional sum = final sum
 		sum_in = round( sum( self.vals ), ndigits=3 )
 		print( " > Sum out {:2} sum in:  {}".format( rv, sum_in ) )
-		#print( self )
-=======
->>>>>>> f8f817e40daceb96e8969a7cf0a7a088f2bc8eab
 
 		if rv not in self.scope:
 			raise Exception( "Trying to sum out {:2} which is not in the Factor".format( rv ) )
@@ -128,7 +125,6 @@ class Factor( dict ):
 			#  - Step by the stride of the RV
 			res_vals[ idx ] = sum( [ self.vals[ start_idx + (rv_stride * step) ] for step in range( rv_card ) ] )
 
-<<<<<<< HEAD
 		#print( Factor( res_scope, res_vals ) )
 		sum_out = round( sum( res_vals ), ndigits=3 )
 		print( " < Sum out {:2} sum out: {}".format( rv, sum_out ) )
@@ -136,10 +132,7 @@ class Factor( dict ):
 		if abs(sum_in-sum_out) > 0.01:
 			print( "SUM DIFFERENCE IS {}".format( abs(sum_in-sum_out) ))
 			print( self )
-=======
-		
 
->>>>>>> f8f817e40daceb96e8969a7cf0a7a088f2bc8eab
 		return Factor( res_scope, res_vals )
 
 
