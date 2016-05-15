@@ -49,7 +49,6 @@ class Factor( dict ):
 							 '\n'.join( [ str( round( e, 3 ) ) for e in self.vals ] ) )
 
 	def __mul__(self, other):
-<<<<<<< HEAD
 		new_scope 	= union( self.scope, other.scope )
 		assignment 	= { e : 0 for e in new_scope }
 		card 		= { u : global_card[ u ] for u in new_scope }
@@ -64,22 +63,6 @@ class Factor( dict ):
 					idx1 -= assignment[ rv ] * self.stride [ rv ] if rv in self.stride  else 0
 					idx2 -= assignment[ rv ] * other.stride[ rv ] if rv in other.stride else 0
 					assignment[ rv ] = 0
-=======
-		XUX 		= union( self.scope, other.scope )
-		assignment 	= { e : 0 for e in XUX }
-		union_card 		= cardOfUnion( XUX )
-		psi 		= [ 0 ] * cardinalityOfValues( XUX )
-
-		idx1 = idx2 = 0
-		for i in range( 0, cardinalityOfValues( XUX ) ):
-			psi[ i ] = self.vals[ idx1 ] * other.vals[ idx2 ]
-			for l in reversed( XUX ):
-				assignment[ l ] += 1
-				if assignment[ l ] == union_card[ l ]:
-					assignment[ l ] = 0
-					idx1 -= (( union_card[ l ] - 1 ) * self.stride [ l ] ) if l in self.scope  else 0
-					idx2 -= (( union_card[ l ] - 1 ) * other.stride[ l ] ) if l in other.scope else 0
->>>>>>> f8f817e40daceb96e8969a7cf0a7a088f2bc8eab
 				else:
 					idx1 += self.stride [ rv ] if rv in self.scope  else 0
 					idx2 += other.stride[ rv ] if rv in other.scope else 0
@@ -99,7 +82,7 @@ class Factor( dict ):
 		return rv in self.scope
 
 	def sumOut( self, rv ):
-		
+
 		# Sum out check, ensure that the origional sum = final sum
 		sum_in = round( sum( self.vals ), ndigits=3 )
 		print( " > Sum out {:2} sum in:  {}".format( rv, sum_in ) )
