@@ -14,28 +14,15 @@ global_card = []
 num_vars = 0
 
 
-def pVal( val ):
-	return round( val, 3 )
-
 def printableVals( vals ):
-	return [ pVal( v ) for v in vals ]
-
-def cardinality( A ):
-	return len( A )
-
-def cardinalityOfValues( XUX ):
-	return reduce( lambda agg, x: agg * global_card[x], XUX, 1 )
-
-def cardOfUnion( U ):
-	return { u : global_card[ u ] for u in U }
+	return [ round( v, 3 ) for v in vals ]
 
 def union( A, B ):
     return [ a for a in A ] + [ b for b in B if b not in A ]
 
 def calcStrides( scope ):
 	rev_scope = list( reversed( scope ) )
-	res = [ 0 ] * len( scope )
-	res[ 0 ] = 1
+	res = [ 1 ] + [ 0 ] * ( len( scope ) - 1 )
 	for idx in range( 1, len( rev_scope ) ):
 		res[ idx ] = res[ idx - 1 ] * global_card[ rev_scope[ idx - 1 ] ]
 	stride = list( reversed( res ) )
@@ -62,25 +49,27 @@ class Factor( dict ):
 							 '\n'.join( [ str( round( e, 3 ) ) for e in self.vals ] ) )
 
 	def __mul__(self, other):
-		XUX 		= union( self.scope, other.scope )
-		assignment 	= { e : 0 for e in XUX }
-		card 		= cardOfUnion( XUX )
-		psi 		= [ 0 ] * cardinalityOfValues( XUX )
+		new_scope 	= union( self.scope, other.scope )
+		assignment 	= { e : 0 for e in new_scope }
+		card 		= { u : global_card[ u ] for u in new_scope }
+		val_count	= reduce( lambda agg, x: agg * global_card[x], new_scope, 1 )
+		new_vals 	= [ 0 ] * val_count
 
 		idx1 = idx2 = 0
-		for i in range( 0, cardinalityOfValues( XUX ) ):
-			psi[ i ] = self.vals[ idx1 ] * other.vals[ idx2 ]
-			for l in reversed( XUX ):
-				assignment[ l ] += 1
-				if assignment[ l ] == card[ l ]:
-					assignment[ l ] = 0
-					idx1 -= (( card[ l ] - 1 ) * self.stride [ l ] ) if l in self.scope  else 0
-					idx2 -= (( card[ l ] - 1 ) * other.stride[ l ] ) if l in other.scope else 0
+		for i in range( 0, val_count ):
+			new_vals[ i ] = self.vals[ idx1 ] * other.vals[ idx2 ]
+			for rv in reversed( new_scope ):
+				if assignment[ rv ] == card[ rv ] - 1:
+					idx1 -= assignment[ rv ] * self.stride [ rv ] if rv in self.stride  else 0
+					idx2 -= assignment[ rv ] * other.stride[ rv ] if rv in other.stride else 0
+					assignment[ rv ] = 0
 				else:
-					idx1 += self.stride [ l ] if l in self.scope  else 0
-					idx2 += other.stride[ l ] if l in other.scope else 0
+					idx1 += self.stride [ rv ] if rv in self.scope  else 0
+					idx2 += other.stride[ rv ] if rv in other.scope else 0
+					assignment[ rv ] += 1
 					break
-		return Factor( XUX, psi )
+
+		return Factor( new_scope, new_vals )
 	#
 
 	def __rmul__(self, other):
@@ -94,11 +83,12 @@ class Factor( dict ):
 
 	def sumOut( self, rv ):
 		# Sum out check, ensure that the origional sum = final sum
-		#print( "--- Sum out for", rv, "initial sum:", sum(self.vals))
+		sum_in = round( sum( self.vals ), ndigits=3 )
+		print( " > Sum out {:2} sum in:  {}".format( rv, sum_in ) )
 		#print( self )
 
 		if rv not in self.scope:
-			raise Exception( "Trying to sum out {} which is not in the Factor".format( rv ) )
+			raise Exception( "Trying to sum out {:2} which is not in the Factor".format( rv ) )
 
 		# The resulting values will be the starting divided by the cardinality of our summed out rv
 		rv_card = global_card[ rv ]
@@ -117,7 +107,12 @@ class Factor( dict ):
 			res_vals[ idx ] = sum( [ self.vals[ start_idx + (rv_stride * step) ] for step in range( rv_card ) ] )
 
 		#print( Factor( res_scope, res_vals ) )
-		#print( "--- Sum out for", rv, "final   sum:", sum(res_vals))
+		sum_out = round( sum( res_vals ), ndigits=3 )
+		print( " < Sum out {:2} sum out: {}".format( rv, sum_out ) )
+
+		if abs(sum_in-sum_out) > 0.01:
+			print( "SUM DIFFERENCE IS {}".format( abs(sum_in-sum_out) ))
+			print( self )
 		return Factor( res_scope, res_vals )
 
 
@@ -173,10 +168,6 @@ def read_model():
 	return [ Factor(s,v) for (s,v) in zip( factor_scopes, factor_vals ) ]
 
 
-#
-# MAIN PROGRAM
-#
-
 def pf(f):
 	for x in f:
 		print(x)
@@ -187,16 +178,16 @@ def factorCountWithVar( factors, rv ):
 def factorStats( factors, possibleVariables ):
 	return { v: factorCountWithVar(factors,v) for v in range( num_vars ) if v in possibleVariables }
 
-def main():
-	factors = read_model()
 
+def computePartitionFunction( factors ):
 	possibleVariables = set( range( num_vars ) )
-	#print( possibleVariables )
 
 	# Get smart about that Z calc
 	while possibleVariables:
 
+		# Break down how many factors contain each possible RV
 		stats = factorStats( factors, possibleVariables )
+		# Take the minimum of these counts and try to sum out that RV
 		rv = min( stats, key=lambda x: stats[x] )
 		possibleVariables.remove( rv )
 
@@ -206,21 +197,37 @@ def main():
 			continue
 
 		new_factors = [ f for f in factors if f not in factors_sub ]
+
+		# Factor the subset of factors containing the RV
 		factored_sub = reduce( Factor.__mul__, factors_sub )
 
 		new_factors.append(
 			factored_sub.sumOut(rv) if len(factored_sub.scope) > 1 else factored_sub
 		)
 
+		# Updated factors to the new factors
 		factors = new_factors
+
 		if len( factors ) == 1:
 			break
 	#
 
 	f = reduce( Factor.__mul__, factors )
-
 	z = sum( f.vals )
-	print( "\nZ = ", z, "\n" )
+	return z
+#
+
+def main():
+	# Read file
+	factors = read_model()
+
+	# Computer partition function
+	z = computePartitionFunction( factors )
+
+	# Print results
+	print( "\tZ = ", z )
 	return
 
-main()
+# Run main if this module is being run
+if __name__ == '__main__':
+	main()
