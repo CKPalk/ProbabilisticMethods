@@ -204,7 +204,7 @@ def computePartitionFunction( factors ):
 		factored_sub = reduce( Factor.__mul__, factors_sub )
 		# Append either a summed out Factor or just the Factor if summing out doesn't make sense
 		new_factors.append(
-			factored_sub.sumOut( the_RV ) if len( factored_sub.scope ) > 1 else factored_sub
+			factored_sub.sumOut( the_RV ) if len factored_sub.scope ) > 1 else factored_sub
 		)
 		# If there is only one factor left we can preemptively stop
 		if len( new_factors ) == 1: break
