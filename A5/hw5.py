@@ -18,7 +18,7 @@ def printableVals( vals ):
 	return [ round( v, 3 ) for v in vals ]
 
 def union( A, B ):
-    return [ a for a in A ] + [ b for b in B if b not in A ]
+	return list( set( A ).union( set( B ) ) )
 
 def calcStrides( scope ):
 	rev_scope = list( reversed( scope ) )
@@ -85,7 +85,7 @@ class Factor( dict ):
 
 		# Sum out check, ensure that the origional sum = final sum
 		sum_in = round( sum( self.vals ), ndigits=3 )
-		print( " > Sum out {:2} sum in:  {}".format( rv, sum_in ) )
+		#print( " > Sum out {:2} sum in:  {}".format( rv, sum_in ) )
 
 		if rv not in self.scope:
 			raise Exception( "Trying to sum out {:2} which is not in the Factor".format( rv ) )
@@ -99,9 +99,21 @@ class Factor( dict ):
 		rv_stride = self.stride[ rv ]
 		#print( rv, "stride", rv_stride )
 
+		#print( self )
 		for idx in range( len( res_vals ) ):
-			sec = idx // rv_stride
-			start_idx = idx + ( sec * rv_stride )
+
+			#print( "for [{}]".format(idx))
+
+			#sec = idx // rv_stride
+			#start_idx = idx + ( sec * rv_stride )
+
+			start_idx = ( idx % rv_stride ) + ((idx // rv_stride) * rv_card * rv_stride)
+			#print( "Section {} = {} // {}".format( sec, idx, rv_stride ) )
+			#start_idx = (idx % rv_card) + ( sec * rv_stride * rv_card )
+
+
+			#print( [ start_idx + (rv_stride * step) for step in range( rv_card ) ] )
+
 
 			# Sum the appropriate values from the origional factors vals
 			#  - Start at ...
@@ -110,11 +122,22 @@ class Factor( dict ):
 
 		#print( Factor( res_scope, res_vals ) )
 		sum_out = round( sum( res_vals ), ndigits=3 )
-		print( " < Sum out {:2} sum out: {}".format( rv, sum_out ) )
+		#print( " < Sum out {:2} sum out: {}".format( rv, sum_out ) )
 
 		if abs(sum_in-sum_out) > 0.01:
 			print( "SUM DIFFERENCE IS {}".format( abs(sum_in-sum_out) ))
-			print( self )
+			#print( self )
+			#print( Factor( res_scope, res_vals ) )
+			for idx in range( len( res_vals ) ):
+				#print( "for [{}]".format(idx))
+				sec = idx // rv_card
+				#start_idx = (idx % rv_card) + ( sec * rv_stride * rv_card )
+				start_idx = ( idx % rv_card ) + ((idx // rv_card) * rv_card * rv_stride)
+
+				# Sum the appropriate values from the origional factors vals
+				#  - Start at ...
+				#  - Step by the stride of the RV
+				#print( [ start_idx + (rv_stride * step) for step in range( rv_card ) ] )
 
 		return Factor( res_scope, res_vals )
 
